@@ -6,6 +6,7 @@
 #include <assert.h>
 
 #include "Deb.h"
+#include "Sys.h"
 #include "FileSys.h"
 #include "Bmp.h"
 
@@ -30,11 +31,18 @@ int main(int argc, char* argv[])
     }
     assert((off_t)((int)size)==size);
 
-    Deb_line("Character ROM size = %d bytes.", (int)size)
+    Sys_log_line(true, true, "Character ROM size = %d bytes.", (int)size);
+    Sys_log_line(
+        true, true,
+        "Character count = %d.", (int)size/((char_dim.w*char_dim.h)/8));
 
-    struct Bmp * const b = Bmp_create(8, (int)size);
+    struct Bmp * const b = Bmp_create(8/*char_dim.w*/, (int)size);
 
-    assert(b->d.w*b->d.h==8*(int)size);
+    Sys_log_line(
+        true, true,
+        "Bitmap resolution = %d x %d pixels.", b->d.w, b->d.h);
+
+    assert(b->d.w*b->d.h==8/*char_dim.w*/*(int)size);
 
     for(int row = 0, c = -1;row<b->d.h;++row)
     {
