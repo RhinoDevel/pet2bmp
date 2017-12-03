@@ -30,6 +30,13 @@ void Bmp_save(struct Bmp const * const inBmp, char const * const inFilePath);
  */
 struct Bmp * Bmp_load(char const * const inFilePath);
 
+/** Create a bitmap with given dimensions.
+ *  Optionally set all pixel values to given value, if not NULL.
+ *
+ * - Caller takes ownership. Free by calling Bmp_delete().
+ */
+struct Bmp * Bmp_create(int inWidth, int inHeight);
+
 #ifdef __cplusplus
 }
 #endif

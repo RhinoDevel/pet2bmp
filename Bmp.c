@@ -176,15 +176,32 @@ void Bmp_save(struct Bmp const * const inBmp, char const * const inFilePath)
     save(inBmp->d.w, inBmp->d.h, inBmp->p, inFilePath);
 }
 
-/** Load bitmap from file.
- *
- * - Caller takes ownership. Free by calling Bmp_delete().
- */
 struct Bmp * Bmp_load(char const * const inFilePath)
 {
     struct Bmp * const retVal = malloc(sizeof *retVal);
     struct Dim d;
     unsigned char * const p = load(inFilePath, &d.w, &d.h);
+
+    assert(retVal!=NULL);
+
+    struct Bmp const buf = (struct Bmp)
+    {
+        .p = p,
+        .d = d
+    };
+    memcpy(retVal, &buf, sizeof *retVal);
+    return retVal;
+}
+
+struct Bmp * Bmp_create(int inWidth, int inHeight)
+{
+    struct Bmp * const retVal = malloc(sizeof *retVal);
+    struct Dim const d = (struct Dim)
+    {
+        .w = inWidth,
+        .h = inHeight
+    };
+    unsigned char * const p = malloc((size_t)(3*d.w*d.h)); // RGB
 
     assert(retVal!=NULL);
 
