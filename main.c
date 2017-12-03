@@ -11,7 +11,7 @@
 
 int main(int argc, char* argv[])
 {
-    FILE* f = NULL;
+    off_t size = -1;
 
     if(argc!=2)
     {
@@ -20,36 +20,29 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    int const s = (int)FileSys_GetFileSize(argv[1]);
+    unsigned char * const char_rom = FileSys_loadFile(argv[1], &size);
 
-    if(s==-1)
+    if(char_rom==NULL)
     {
-        Deb_line("Error: Failed to get size of source file!");
         return 2;
     }
+    assert((off_t)((int)size)==size);
 
-    f = fopen(argv[1], "rb");
-    if(f==NULL)
-    {
-        Deb_line("Error: Failed to open source file!")
-        return 3;
-    }
+    Deb_line("Character ROM size = %d bytes.", (int)size)
 
     struct Bmp const b = (struct Bmp)
     {
-        .p = malloc(3*8*s), // RGB
+        .p = malloc((size_t)(3*8*size)), // RGB
         .d = (struct Dim)
         {
             .w = 8,
-            .h = s
+            .h = (int)size
         }
     };
-    assert(b.d.w*b.d.h==8*s);
+    assert(b.d.w*b.d.h==8*(int)size);
 
-    for(int row = 0;row<b.d.h;++row)
+    for(int row = 0, c = -1;row<b.d.h;++row)
     {
-        unsigned char c = 0;
-
         for(int col = 0;col<b.d.w;++col)
         {
             int const offset = row*b.d.w+col,
@@ -57,18 +50,18 @@ int main(int argc, char* argv[])
 
             if(bit==0)
             {
-                fread(&c, 1, 1, f); // No error check!
+                ++c;
             }
 
-            b.p[3*offset+0] = (c>>(7-bit))&1==1 ? 0xFF : 0;
-            b.p[3*offset+1] = (c>>(7-bit))&1==1 ? 0xFF : 0;
-            b.p[3*offset+2] = (c>>(7-bit))&1==1 ? 0xFF : 0;
+            b.p[3*offset+0] = ((char_rom[c]>>(7-bit))&1)==1 ? 0xFF : 0;
+            b.p[3*offset+1] = ((char_rom[c]>>(7-bit))&1)==1 ? 0xFF : 0;
+            b.p[3*offset+2] = ((char_rom[c]>>(7-bit))&1)==1 ? 0xFF : 0;
         }
     }
-    fclose(f);
 
     Bmp_save(&b, "test.bmp");
 
+    free(char_rom);
     free(b.p);
     return 0;
 }
