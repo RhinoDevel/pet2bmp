@@ -9,14 +9,16 @@
 #include "FileSys.h"
 #include "Bmp.h"
 
+static struct Dim const char_dim = (struct Dim){.w = 8, .h = 8};
+
 int main(int argc, char* argv[])
 {
     off_t size = -1;
 
-    if(argc!=2)
+    if(argc!=3)
     {
         Deb_line(
-            "Error: Exactly one argument (the source file name) must be given!")
+            "Error: Exactly two arguments (src. & dest. files) must be given!")
         return 1;
     }
 
@@ -52,7 +54,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    Bmp_save(b, "test.bmp");
+    Bmp_save(b, argv[2]);
 
     free(char_rom);
     Bmp_delete(b);
