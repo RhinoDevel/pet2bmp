@@ -610,3 +610,38 @@ int FileSys_getContentCount(char const * const inPath, off_t * const inOutSize, 
     }
     return retVal;
 }
+
+unsigned char * FileSys_loadFile(
+    char const * const inPath, off_t * const inOutSize)
+{
+    *inOutSize = -1;
+
+    off_t const signed_size = FileSys_GetFileSize(inPath);
+
+    if(signed_size==-1)
+    {
+        Deb_line("Error: Failed to get size of file \"%s\"!", inPath)
+        return NULL;
+    }
+
+    FILE * const file = fopen(inPath, "rb");
+
+    if(file==NULL)
+    {
+        Deb_line("Error: Failed to open source file \"%s\"!", inPath)
+        return NULL;
+    }
+
+    size_t const size = (size_t)signed_size;
+    unsigned char * const buf = malloc(size*sizeof(*buf));
+
+    if(fread(buf, sizeof(*buf), size, file)!=size)
+    {
+        Deb_line("Error: Failed to completely load character ROM file content!")
+        return NULL;
+    }
+
+    fclose(file);
+    *inOutSize = signed_size;
+    return buf;
+}

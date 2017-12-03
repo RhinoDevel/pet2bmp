@@ -83,6 +83,14 @@ bool FileSys_copy(char const * const inInputPath, char const * const inOutputPat
  */
 int FileSys_getContentCount(char const * const inPath, off_t * const inOutSize, void (*inIncrementFunc)(void));
 
+/** Return content of file at given path.
+ *
+ *  - Returns NULL on error.
+ *  - Caller takes ownership of return value.
+ */
+unsigned char * FileSys_loadFile(
+    char const * const inPath, off_t * const inOutSize);
+
 #ifdef __cplusplus
 }
 #endif
