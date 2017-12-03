@@ -11,8 +11,18 @@
 #include "Bmp.h"
 
 static struct Dim const char_dim = (struct Dim){.w = 8, .h = 8};
-static unsigned char const foreground_channel_val = 0xFF;
-static unsigned char const background_channel_val = 0;
+
+// Foreground pixels' color:
+//
+static unsigned char const fg_red = 0;
+static unsigned char const fg_green = 0xFF;
+static unsigned char const fg_blue = 0;
+
+// Background pixels' color:
+//
+static unsigned char const bg_red = 0;
+static unsigned char const bg_green = 0;
+static unsigned char const bg_blue = 0;
 
 int main(int argc, char* argv[])
 {
@@ -71,13 +81,10 @@ int main(int argc, char* argv[])
 
             for(int bit = 7;bit>=0;--bit) // For each bit, from left to right.
             {
-                // Find pixel channel value to represent
-                // character's bit's value:
+                // Find out, if bit represents a foreground or background pixel:
 
                 int const bit_val = (byte>>bit)&1;
                 bool const is_background = bit_val==0;
-                unsigned char const channel_val = is_background
-                    ? background_channel_val : foreground_channel_val;
 
                 // Find position of pixel and its channels representing
                 // character's bit in output bitmap:
@@ -91,9 +98,9 @@ int main(int argc, char* argv[])
 
                 // Set output pixel's channel values:
 
-                b->p[out_channel_offset+0] = channel_val;
-                b->p[out_channel_offset+1] = channel_val;
-                b->p[out_channel_offset+2] = channel_val;
+                b->p[out_channel_offset+2] = is_background?bg_red:fg_red;
+                b->p[out_channel_offset+1] = is_background?bg_green:fg_green;
+                b->p[out_channel_offset+0] = is_background?bg_blue:fg_blue;
             }
         }
     }
