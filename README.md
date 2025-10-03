@@ -11,5 +11,4 @@ http://www.zimmers.net/anonftp/pub/cbm/firmware/computers/pet/characters-japan.9
 
 Output:
 
-![Japanese ROM](https://photorhino.files.wordpress.com/2017/12/petscii_char_rom_japan.png)
-
+![Japanese ROM](./characters-japan_901447-12_bin.bmp)
