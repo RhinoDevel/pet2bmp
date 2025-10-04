@@ -200,12 +200,12 @@ static unsigned char * load(char const * const inFilePath, int * const inOutWidt
 
     if(0 < int_height)
     {
-        flipVertically(imgData, (int)infoHeader.width, int_height);
+        flipVertically(imgData, (int)infoHeader.width, -int_height);
     }
 
     fclose(filePtr);
     *inOutWidth = (int)infoHeader.width;
-    *inOutHeight = int_height;
+    *inOutHeight = abs(int_height);
     return imgData;
 }
 
