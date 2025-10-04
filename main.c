@@ -24,28 +24,23 @@ static unsigned char const bg_red = 0;
 static unsigned char const bg_green = 0;
 static unsigned char const bg_blue = 0;
 
-int main(int argc, char* argv[])
+static bool save_rom_as_bmp(
+    char const * const rom_file_path, char const * const bmp_file_path)
 {
     off_t size = -1;
 
-    if(argc!=3)
+    unsigned char * const char_rom = FileSys_loadFile(rom_file_path, &size);
+
+    if(char_rom == NULL)
     {
-        Deb_line(
-            "Error: Exactly two arguments (src. & dest. files) must be given!")
-        return 1;
+        return false; // (called function debug-logs on error)
     }
 
-    unsigned char * const char_rom = FileSys_loadFile(argv[1], &size);
-
-    if(char_rom==NULL)
-    {
-        return 2;
-    }
-    assert((off_t)((int)size)==size);
+    assert((off_t)((int)size) == size);
 
     Sys_log_line(true, true, "Character ROM size = %d bytes.", (int)size);
 
-    int const char_cnt = (int)size/((char_dim.w*char_dim.h)/8);
+    int const char_cnt = (int)size / ((char_dim.w * char_dim.h) / 8);
 
     Sys_log_line(true, true, "Character count = %d.", char_cnt);
 
@@ -64,70 +59,95 @@ int main(int argc, char* argv[])
         true, true,
         "Bitmap resolution = %d x %d pixels.", b->d.w, b->d.h);
 
-    assert(b->d.w*b->d.h==8/*char_dim.w*/*(int)size);
+    assert(b->d.w*b->d.h == 8/*char_dim.w*/ * (int)size);
 
-    int const out_char_w = b->d.w/char_dim.w;
+    int const out_char_w = b->d.w / char_dim.w;
 
     Sys_log_line(true, true, "Characters in one bitmap row = %d.", out_char_w);
 
-    for(int c = 0;c<char_cnt;++c) // For each character in ROM.
+    for(int c = 0; c < char_cnt; ++c) // For each character in ROM.
     {
-        int const row_offset = c*1*char_dim.h;
+        int const row_offset = c * 1 * char_dim.h;
 
-        for(int row = 0;row<char_dim.h;++row) // For each row / each byte.
+        for(int row = 0; row < char_dim.h; ++row) // For each row / each byte.
         {
-            int const byte_offset = row_offset+row*1;
+            int const byte_offset = row_offset + row * 1;
             unsigned char const byte = char_rom[byte_offset];
 
-            for(int bit = 7;bit>=0;--bit) // For each bit, from left to right.
+            // For each bit, from left to right.
+            for(int bit = 7; 0 <= bit; --bit)
             {
                 // Find out, if bit represents a foreground or background pixel:
 
-                int const bit_val = (byte>>bit)&1;
-                bool const is_background = bit_val==0;
+                int const bit_val = (byte >> bit) & 1;
+                bool const is_background = bit_val == 0;
 
                 // Find position of pixel and its channels representing
                 // character's bit in output bitmap:
 
-                int const out_char_row = c/out_char_w,
-                    out_char_col = c%out_char_w,
-                    out_pix_row = out_char_row*char_dim.w+row,
-                    out_pix_col = out_char_col*char_dim.h+7-bit,
-                    out_pix_offset = out_pix_row*b->d.w+out_pix_col,
-                    out_channel_offset = 3*out_pix_offset;
+                int const out_char_row = c / out_char_w,
+                    out_char_col = c % out_char_w,
+                    out_pix_row = out_char_row * char_dim.w + row,
+                    out_pix_col = out_char_col * char_dim.h + 7 - bit,
+                    out_pix_offset = out_pix_row * b->d.w + out_pix_col,
+                    out_channel_offset = 3 * out_pix_offset;
 
                 // Set output pixel's channel values:
 
-                b->p[out_channel_offset+2] = is_background?bg_red:fg_red;
-                b->p[out_channel_offset+1] = is_background?bg_green:fg_green;
-                b->p[out_channel_offset+0] = is_background?bg_blue:fg_blue;
+                b->p[out_channel_offset + 2] =
+                    is_background ? bg_red : fg_red;
+                b->p[out_channel_offset + 1] =
+                    is_background ? bg_green : fg_green;
+                b->p[out_channel_offset + 0] =
+                    is_background ? bg_blue : fg_blue;
             }
         }
     }
     //
     // // For single-column output (also see above):
     // //
-    // for(int row = 0, c = -1;row<b->d.h;++row)
+    // for(int row = 0, c = -1; row < b->d.h; ++row)
     // {
-    //     for(int col = 0;col<b->d.w;++col)
+    //     for(int col = 0; col < b->d.w; ++col)
     //     {
-    //         int const offset = row*b->d.w+col,
-    //             bit = offset%8;
+    //         int const offset = row*b->d.w + col,
+    //             bit = offset % 8;
     //
-    //         if(bit==0)
+    //         if(bit == 0)
     //         {
     //             ++c;
     //         }
     //
-    //         b->p[3*offset+0] = ((char_rom[c]>>(7-bit))&1)==1 ? 0xFF : 0;
-    //         b->p[3*offset+1] = ((char_rom[c]>>(7-bit))&1)==1 ? 0xFF : 0;
-    //         b->p[3*offset+2] = ((char_rom[c]>>(7-bit))&1)==1 ? 0xFF : 0;
+    //         b->p[3 * offset + 0] =
+    //             ((char_rom[c] >> (7 - bit)) & 1) == 1 ? 0xFF : 0;
+    //         b->p[3 * offset + 1] =
+    //             ((char_rom[c] >> (7 - bit)) & 1) == 1 ? 0xFF : 0;
+    //         b->p[3 * offset + 2] =
+    //             ((char_rom[c] >> (7 - bit)) & 1) == 1 ? 0xFF : 0;
     //     }
     // }
 
-    Bmp_save(b, argv[2]);
+    Bmp_save(b, bmp_file_path);
 
     free(char_rom);
     Bmp_delete(b);
+    return true;
+}
+
+int main(int argc, char* argv[])
+{
+    if(argc!=3)
+    {
+        Deb_line(
+            "Error: Exactly two arguments (src. & dest. files) must be given!")
+        return 1;
+    }
+
+    if(!save_rom_as_bmp(argv[1], argv[2]))
+    {
+        Deb_line("Error: Failed to create bitmap file from ROM file!")
+        return 2;
+    }
+
     return 0;
 }
