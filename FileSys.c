@@ -57,3 +57,44 @@ unsigned char * FileSys_loadFile(
     *inOutSize = signed_size;
     return buf;
 }
+
+bool FileSys_saveFile(
+    char const * const inPath,
+    unsigned char const * const bytes,
+    int const byteCount)
+{
+    FILE* fp = NULL;
+
+    if(inPath == NULL || inPath[0] == '\0')
+    {
+        Deb_line("Error: No or empty file path given!")
+        return false;
+    }
+    if(0 < byteCount && bytes == NULL)
+    {
+        Deb_line("Error: Byte count given, but no bytes!")
+        return false;
+    }
+    if(byteCount < 0)
+    {
+        Deb_line("Error: Negative byte count given!")
+    }
+
+    fp = fopen(inPath, "wb");
+
+    if(0 < byteCount)
+    {
+        assert(bytes != NULL); // Checked above.
+        
+        if(fwrite(bytes, 1, byteCount, fp) != (size_t)byteCount)
+        {
+            Deb_line("Error: Not all bytes were written!")
+            fclose(fp);
+            fp = NULL;
+            return false;
+        }
+    }
+
+    fclose(fp);
+    return true;
+}

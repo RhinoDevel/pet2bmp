@@ -20,6 +20,11 @@ off_t FileSys_GetFileSize(char const * const inPath);
 unsigned char * FileSys_loadFile(
     char const * const inPath, off_t * const inOutSize);
 
+bool FileSys_saveFile(
+    char const * const inPath,
+    unsigned char const * const bytes,
+    int const byteCount);
+
 #ifdef __cplusplus
 }
 #endif
