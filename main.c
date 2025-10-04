@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <string.h>
 
 #include "Deb.h"
 #include "Sys.h"
@@ -30,7 +31,100 @@ static unsigned char const bg_blue = 0;
 static bool save_bmp_as_rom(
     char const * const bmp_file_path, char const * const rom_file_path)
 {
-    return false; // TODO: Implement!
+    struct Bmp * const bmp = Bmp_load(bmp_file_path);
+
+    if(bmp == NULL)
+    {
+        return false; // (called method debug-logs)
+    }
+
+    assert(char_dim.w == 8); // One row of a char must be a byte.
+    int const char_byte_count = char_dim.h;
+
+    // The bitmap must hold complete characters.
+    assert((bmp->d.w * bmp->d.h) % (char_dim.w * char_dim.h) == 0);
+    int const char_count = (bmp->d.w * bmp->d.h) / (char_dim.w * char_dim.h);
+
+    Deb_line("Character count: %d", char_count)
+
+    size_t const rom_byte_count = (size_t)(char_count * char_byte_count);
+
+    Deb_line("ROM byte count: %zu", rom_byte_count)
+
+    assert(sizeof(unsigned char) == 1);
+    unsigned char * const rom = malloc(rom_byte_count);
+
+    if(rom == NULL)
+    {
+        Deb_line(
+            "Error: Failed to allocate ROM memory (%zu bytes)!",
+            rom_byte_count)
+        Bmp_delete(bmp);
+        return false;
+    }
+
+    // One bitmap row must be exactly wide enough to hold complete characters.
+    assert(bmp->d.w % char_dim.w == 0);
+    int const row_char_count = bmp->d.w / char_dim.w;
+    int const col_char_count = bmp->d.h / char_dim.h;
+
+    Deb_line("Row char. count: %d", row_char_count)
+
+    // TODO: Hard-coded, read this from bitmap file!
+    static int const bytes_per_pixel = 3;
+
+    memset(rom, 0, rom_byte_count); // TODO: Do in loop!
+
+    for(int char_i = 0; char_i < char_count; ++char_i)
+    {
+        int const bmp_row_beg = char_dim.h * (char_i / row_char_count);
+        int const bmp_row_lim = bmp_row_beg + char_dim.h;
+
+        int const bmp_col_beg = char_dim.w * (char_i % col_char_count);
+        int const bmp_col_lim = bmp_col_beg + char_dim.w;
+
+        Deb_line(
+            "Char.: %d, rows: [%d, %d), columns: [%d, %d)",
+            char_i, bmp_row_beg, bmp_row_lim, bmp_col_beg, bmp_col_lim)
+
+        for(int bmp_row = bmp_row_beg; bmp_row < bmp_row_lim; ++bmp_row)
+        {
+            // Assuming row to be completely filled with pixel data (no stride).
+            int const bmp_row_offset = bmp_row * bmp->d.w;
+
+            for(int bmp_col = bmp_col_beg; bmp_col < bmp_col_lim; ++bmp_col)
+            {
+                int const bmp_col_offset = bmp_row_offset + bmp_col;
+
+                int const bmp_col_channel_offset =
+                        bytes_per_pixel * bmp_col_offset;
+
+                // Assuming black to always be the background color!
+                if(bmp->p[bmp_col_channel_offset + 0] != 0
+                    || bmp->p[bmp_col_channel_offset + 1] != 0
+                    || bmp->p[bmp_col_channel_offset + 2] != 0)
+                {
+                    int const shift_count = 7 - (bmp_col - bmp_col_beg);
+                    unsigned char const mask =
+                        (unsigned char)(1 << shift_count);
+
+                    rom[char_i * char_byte_count + bmp_row - bmp_row_beg] =
+                        rom[char_i * char_byte_count + bmp_row - bmp_row_beg]
+                            | mask;
+                }
+            }
+        }
+    }
+
+    if(!FileSys_saveFile(rom_file_path, rom, rom_byte_count))
+    {
+        free(rom);
+        Bmp_delete(bmp);
+        return false; // Called method debug-logs on error.
+    }
+    free(rom);
+    Bmp_delete(bmp);
+    return true;
 }
 
 static bool save_rom_as_bmp(
