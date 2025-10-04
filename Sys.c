@@ -11,6 +11,36 @@
 #include <ctype.h>
 #include "Sys.h"
 
+/**
+ * - Date and seconds boolean parameters do nothing, if date/time parameter is
+ *   set to false.
+ * 
+ * - Original source for variable arguments:
+ * 
+ *   http://stackoverflow.com/questions/1056411/how-to-pass-variable-number-of-arguments-to-printf-sprintf/1056424#1056424
+ */
+static void log_line(
+    bool const inDateTime,
+    bool const inDate,
+    bool const inSeconds,
+    char const * const inStr,
+    va_list const argPtr)
+{
+    assert(inStr != NULL);
+
+    if(inDateTime)
+    {
+        char * const timePtr = Sys_create_time_str(inDate, inSeconds);
+
+        printf("%s", timePtr);
+        printf(" - ");
+    }
+
+    vprintf(inStr, argPtr);
+
+    printf("\n");
+}
+
 bool Sys_is_big_endian()
 {
     assert(sizeof(unsigned int)==4);
@@ -62,14 +92,22 @@ char* Sys_create_time_str(bool const inDate, bool const inSeconds)
         len += 3; // :59
     }
 
-    size_t const byteLen = len*(sizeof *retVal);
+    len += 8; // Just to silence the compiler (avoid warning).
+
+    size_t const byteLen = len * (sizeof *retVal);
 
     retVal = malloc(byteLen);
     assert(retVal!=NULL);
 
     if(inDate)
     {
-        snprintf(retVal+pos, byteLen-pos, "%d/%02d/%02d-", l->tm_year+1900, l->tm_mon+1, l->tm_mday);
+        snprintf(
+            retVal + pos,
+            byteLen - pos,
+            "%d/%02d/%02d-",
+            l->tm_year + 1900,
+            l->tm_mon + 1,
+            l->tm_mday);
 
         pos += dateLen;
     }
@@ -126,19 +164,23 @@ char* Sys_get_stdin()
 
 /** Original source for variable arguments: http://stackoverflow.com/questions/1056411/how-to-pass-variable-number-of-arguments-to-printf-sprintf/1056424#1056424
  */
-void Sys_log_line(bool const inDate, bool const inSeconds, char const * const inStr, ...)
+void Sys_log_line(
+    bool const inDate, bool const inSeconds, char const * const inStr, ...)
 {
     va_list argPtr;
-    char * const timePtr = Sys_create_time_str(inDate, inSeconds);
-
-    printf("%s", timePtr);
-    printf(" - ");
-
-    assert(inStr!=NULL);
-
     va_start(argPtr, inStr);
-    vprintf(inStr, argPtr);
-    va_end(argPtr);
 
-    printf("\n");
+    log_line(true, inDate, inSeconds, inStr, argPtr);
+
+    va_end(argPtr);
+}
+
+void Sys_log_line_bare(char const * const inStr, ...)
+{
+    va_list argPtr;
+    va_start(argPtr, inStr);
+
+    log_line(false, false, false, inStr, argPtr);
+
+    va_end(argPtr); 
 }
