@@ -27,6 +27,12 @@ static unsigned char const bg_red = 0;
 static unsigned char const bg_green = 0;
 static unsigned char const bg_blue = 0;
 
+static bool save_bmp_as_rom(
+    char const * const bmp_file_path, char const * const rom_file_path)
+{
+    return false; // TODO: Implement!
+}
+
 static bool save_rom_as_bmp(
     char const * const rom_file_path, char const * const bmp_file_path)
 {
@@ -166,12 +172,11 @@ int main(int argc, char* argv[])
     }
 
     // Create ROM file from bitmap file.
-
     assert(argv[1][0] == 'r');
-
-    Sys_log_line_bare(
-        "Error: Bitmap to ROM conversion is not implemented, yet!");
-    return 3; // TODO: Implement!
-    
+    if(!save_bmp_as_rom(argv[2], argv[3]))
+    {
+        Sys_log_line_bare("Error: Failed to create ROM file from bitmap file!");
+        return 3;
+    }
     return 0;
 }
