@@ -19,10 +19,10 @@ custom EEPROM)!
 
 **Example:**
 
-Input:
+Input ROM file:
 
 http://www.zimmers.net/anonftp/pub/cbm/firmware/computers/pet/characters-japan.901447-12.bin
 
-Output:
+Output bitmap file:
 
 ![Japanese ROM](./characters-japan_901447-12_bin.bmp)
