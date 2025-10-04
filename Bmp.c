@@ -9,6 +9,7 @@
 
 #include "Sys.h"
 #include "Bmp.h"
+#include "Deb.h"
 
 static uint16_t const BITS_PER_PIXEL = 24;
 static uint16_t const PLANES = 1;
@@ -44,6 +45,32 @@ struct Bitmap
     struct BitmapInfoHeader bmpInfoHeader;
 };
 #pragma pack(pop)
+
+static void log_file_header(struct FileHeader const h)
+{
+    Sys_log_line_bare("FileHeader");
+    Sys_log_line_bare(".signature[0]         = %c", h.signature[0]);
+    Sys_log_line_bare(".signature[1]         = %c", h.signature[1]);
+    Sys_log_line_bare(".fileSize             = %u", h.fileSize);
+    Sys_log_line_bare(".reserved             = %u", h.reserved);
+    Sys_log_line_bare(".fileOffsetToPixelArr = %u", h.fileOffsetToPixelArr);
+}
+
+static void log_bitmap_info_header(struct BitmapInfoHeader const h)
+{
+    Sys_log_line_bare("BitmapInfoHeader");
+    Sys_log_line_bare(".dibHeaderSize = %u", h.dibHeaderSize);
+    Sys_log_line_bare(".width = %u", h.width);
+    Sys_log_line_bare(".height = %d", (int)h.height);
+    Sys_log_line_bare(".planes = %u", h.planes);
+    Sys_log_line_bare(".bitsPerPixel = %u", h.bitsPerPixel);
+    Sys_log_line_bare(".compression = %u", h.compression);
+    Sys_log_line_bare(".imgSize = %u", h.imgSize);
+    Sys_log_line_bare(".yPixelPerMeter = %u", h.yPixelPerMeter);
+    Sys_log_line_bare(".xPixelPerMeter = %u", h.xPixelPerMeter);
+    Sys_log_line_bare(".numColorsPalette = %u", h.numColorsPalette);
+    Sys_log_line_bare(".mostImpColor = %u", h.mostImpColor);
+}
 
 static void flipVertically(unsigned char * const inOutPixels, int const inWidth, int const inHeight)
 {
@@ -83,9 +110,11 @@ static void save(int const inWidth, int const inHeight, unsigned char const * co
     bmp->fileHeader.fileSize = sizeof *bmp+pixelByteSize;
     bmp->fileHeader.fileOffsetToPixelArr = sizeof *bmp;
 
-    bmp->bmpInfoHeader.dibHeaderSize =sizeof bmp->bmpInfoHeader;
+    bmp->bmpInfoHeader.dibHeaderSize = sizeof bmp->bmpInfoHeader;
     bmp->bmpInfoHeader.width = inWidth;
-    bmp->bmpInfoHeader.height = -inHeight; // HARD-CODED top to bottom pixel order by negation!
+
+    // HARD-CODED top to bottom pixel order by negation!
+    bmp->bmpInfoHeader.height = (uint32_t)(-inHeight);
     bmp->bmpInfoHeader.planes = PLANES;
     bmp->bmpInfoHeader.bitsPerPixel = BITS_PER_PIXEL;
     bmp->bmpInfoHeader.compression = COMPRESSION;
@@ -94,6 +123,13 @@ static void save(int const inWidth, int const inHeight, unsigned char const * co
     bmp->bmpInfoHeader.xPixelPerMeter = X_PIXEL_PER_METER;
     bmp->bmpInfoHeader.numColorsPalette = 0;
     bmp->bmpInfoHeader.mostImpColor = 0;
+
+#ifndef NDEBUG
+    Sys_log_line_bare("Bitmap struct. size   = %u", sizeof *bmp);
+
+    log_file_header(bmp->fileHeader);
+    log_bitmap_info_header(bmp->bmpInfoHeader);
+#endif //NDEBUG
 
     FILE * const fp = fopen(inFilePath,"wb");
 
@@ -125,38 +161,51 @@ static unsigned char * load(char const * const inFilePath, int * const inOutWidt
     filePtr = fopen(inFilePath, "rb");
     if(filePtr==NULL)
     {
+        Deb_line("Error: Failed to load bitmap file!")
         return NULL;
     }
 
     fread(&fileHeader, sizeof(struct FileHeader), 1, filePtr);
 
+#ifndef NDEBUG
+    log_file_header(fileHeader);
+#endif //NDEBUG
+
     if(fileHeader.signature[0]!='B' || fileHeader.signature[1]!='M')
     {
+        Deb_line("Error: Unexpected file header signature found!")
         fclose(filePtr);
         return NULL;
     }
 
     fread(&infoHeader, sizeof(struct BitmapInfoHeader), 1, filePtr);
 
+#ifndef NDEBUG
+    log_bitmap_info_header(infoHeader);
+#endif //NDEBUG
+
     fseek(filePtr, fileHeader.fileOffsetToPixelArr, SEEK_SET);
 
     imgData = malloc(infoHeader.imgSize);
     if (imgData==NULL)
     {
+        Deb_line("Error: Failed to allocate image data memory!")
         fclose(filePtr);
         return NULL;
     }
 
     fread(imgData, infoHeader.imgSize, 1, filePtr);
 
-    if(infoHeader.height>0)
+    int const int_height = (int)infoHeader.height;
+
+    if(0 < int_height)
     {
-        flipVertically(imgData, infoHeader.width, infoHeader.height);
+        flipVertically(imgData, (int)infoHeader.width, int_height);
     }
 
     fclose(filePtr);
-    *inOutWidth = infoHeader.width;
-    *inOutHeight = abs(infoHeader.height);
+    *inOutWidth = (int)infoHeader.width;
+    *inOutHeight = int_height;
     return imgData;
 }
 
@@ -182,7 +231,10 @@ struct Bmp * Bmp_load(char const * const inFilePath)
     struct Dim d;
     unsigned char * const p = load(inFilePath, &d.w, &d.h);
 
-    assert(retVal!=NULL);
+    if(p == NULL)
+    {
+        return NULL; // (called method logs on error)
+    }
 
     struct Bmp const buf = (struct Bmp)
     {

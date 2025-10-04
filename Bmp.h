@@ -26,6 +26,7 @@ void Bmp_save(struct Bmp const * const inBmp, char const * const inFilePath);
 
 /** Load bitmap from file.
  *
+ * - Returns NULL, if bitmap could not be loaded.
  * - Caller takes ownership. Free by calling Bmp_delete().
  */
 struct Bmp * Bmp_load(char const * const inFilePath);
