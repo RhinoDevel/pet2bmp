@@ -10,6 +10,9 @@
 #include "FileSys.h"
 #include "Bmp.h"
 
+// Hard-coded (also see Makefile):
+static char const * const executable = "pet2bmp";
+
 static struct Dim const char_dim = (struct Dim){.w = 8, .h = 8};
 
 // Foreground pixels' color:
@@ -38,11 +41,11 @@ static bool save_rom_as_bmp(
 
     assert((off_t)((int)size) == size);
 
-    Sys_log_line(true, true, "Character ROM size = %d bytes.", (int)size);
+    Sys_log_line_bare("Character ROM size = %d bytes.", (int)size);
 
     int const char_cnt = (int)size / ((char_dim.w * char_dim.h) / 8);
 
-    Sys_log_line(true, true, "Character count = %d.", char_cnt);
+    Sys_log_line_bare("Character count = %d.", char_cnt);
 
     // - 16 x 16 = 256 characters.
     // - 1 character <=> 8 x 8 pixels.
@@ -55,15 +58,13 @@ static bool save_rom_as_bmp(
     // //
     // struct Bmp * const b = Bmp_create(8/*char_dim.w*/, (int)size);
 
-    Sys_log_line(
-        true, true,
-        "Bitmap resolution = %d x %d pixels.", b->d.w, b->d.h);
+    Sys_log_line_bare("Bitmap resolution = %d x %d pixels.", b->d.w, b->d.h);
 
     assert(b->d.w*b->d.h == 8/*char_dim.w*/ * (int)size);
 
     int const out_char_w = b->d.w / char_dim.w;
 
-    Sys_log_line(true, true, "Characters in one bitmap row = %d.", out_char_w);
+    Sys_log_line_bare("Characters in one bitmap row = %d.", out_char_w);
 
     for(int c = 0; c < char_cnt; ++c) // For each character in ROM.
     {
@@ -136,18 +137,41 @@ static bool save_rom_as_bmp(
 
 int main(int argc, char* argv[])
 {
-    if(argc!=3)
+    if(argc != (3 + 1)
+        || (argv[1][0] != 'b' && argv[1][0] != 'r')
+        || argv[1][1] != '\0')
     {
-        Deb_line(
-            "Error: Exactly two arguments (src. & dest. files) must be given!")
+        Sys_log_line_bare(
+            "Please use one of the following parameter combinations:");
+        Sys_log_line_bare(
+            "");
+        Sys_log_line_bare(
+            "%s b <input ROM file path> <output bitmap file path>", executable);
+        Sys_log_line_bare(
+            "%s r <input bitmap file path> <output ROM file path>", executable);
         return 1;
     }
 
-    if(!save_rom_as_bmp(argv[1], argv[2]))
+    if(argv[1][0] == 'b')
     {
-        Deb_line("Error: Failed to create bitmap file from ROM file!")
-        return 2;
+        // Create bitmap file from ROM file.
+
+        if(!save_rom_as_bmp(argv[2], argv[3]))
+        {
+            Sys_log_line_bare(
+                "Error: Failed to create bitmap file from ROM file!");
+            return 2;
+        }
+        return 0;
     }
 
+    // Create ROM file from bitmap file.
+
+    assert(argv[1][0] == 'r');
+
+    Sys_log_line_bare(
+        "Error: Bitmap to ROM conversion is not implemented, yet!");
+    return 3; // TODO: Implement!
+    
     return 0;
 }

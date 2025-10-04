@@ -10,6 +10,8 @@ LDFLAGS=
 SOURCES=main.c Sys.c Bmp.c Dim.c FileSys.c
 
 OBJECTS=$(SOURCES:.c=.o)
+
+# Hard-coded (also see main.c):
 EXECUTABLE=pet2bmp
 
 all: $(SOURCES) $(EXECUTABLE)
