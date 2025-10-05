@@ -290,16 +290,41 @@ static struct Bmp * create_bmp_from_rom_file(char const * const rom_file_path)
     return b;
 }
 
+static struct Bmp * create_bmp_from_txt_file(
+    char const * const text_file_path)
+{
+    return NULL; // TODO: Implement!   
+}
+
 static bool save_txt_as_rom(
     char const * const text_file_path, char const * const rom_file_path)
 {
-    // TODO: Implement:
-    //
-    // - Create Bitmap object from text file.
-    // - Use create_rom_from_bmp().
-    // - Use FileSys_saveFile() to save the ROM file.
-    //
-    return false;
+    struct Bmp * bmp = create_bmp_from_txt_file(text_file_path);
+    size_t rom_byte_count = 0;
+
+    if(bmp == NULL)
+    {
+        return false; // Called function debug-logs on error.
+    }
+
+    unsigned char * const rom = create_rom_from_bmp(bmp, &rom_byte_count);
+    
+    Bmp_delete(bmp);
+    bmp = NULL;
+
+    if(rom == NULL)
+    {
+        return false; // Called function debug-logs on error.
+    }
+    assert(0 < rom_byte_count);
+
+    if(!FileSys_saveFile(rom_file_path, rom, rom_byte_count))
+    {
+        free(rom);
+        return false; // Called function debug-logs on error.
+    }
+    free(rom);
+    return true;
 }
 
 static bool save_rom_as_txt(
