@@ -22,8 +22,13 @@ unsigned char * FileSys_loadFile(
 
 bool FileSys_saveFile(
     char const * const inPath,
-    unsigned char const * const bytes,
-    int const byteCount);
+    unsigned char const * const inBytes,
+    int const inByteCount);
+
+bool FileSys_saveTxtFile(
+    char const * const inPath,
+    char const * const inChars,
+    int const inCharCount);
 
 #ifdef __cplusplus
 }

@@ -60,8 +60,8 @@ unsigned char * FileSys_loadFile(
 
 bool FileSys_saveFile(
     char const * const inPath,
-    unsigned char const * const bytes,
-    int const byteCount)
+    unsigned char const * const inBytes,
+    int const inByteCount)
 {
     FILE* fp = NULL;
 
@@ -70,25 +70,68 @@ bool FileSys_saveFile(
         Deb_line("Error: No or empty file path given!")
         return false;
     }
-    if(0 < byteCount && bytes == NULL)
+    if(0 < inByteCount && inBytes == NULL)
     {
         Deb_line("Error: Byte count given, but no bytes!")
         return false;
     }
-    if(byteCount < 0)
+    if(inByteCount < 0)
     {
         Deb_line("Error: Negative byte count given!")
     }
 
     fp = fopen(inPath, "wb");
 
-    if(0 < byteCount)
+    if(0 < inByteCount)
     {
-        assert(bytes != NULL); // Checked above.
+        assert(inBytes != NULL); // Checked above.
         
-        if(fwrite(bytes, 1, byteCount, fp) != (size_t)byteCount)
+        assert(sizeof *inBytes == 1);
+        if(fwrite(inBytes, 1, (size_t)inByteCount, fp) != (size_t)inByteCount)
         {
             Deb_line("Error: Not all bytes were written!")
+            fclose(fp);
+            fp = NULL;
+            return false;
+        }
+    }
+
+    fclose(fp);
+    return true;
+}
+
+bool FileSys_saveTxtFile(
+    char const * const inPath,
+    char const * const inChars,
+    int const inCharCount)
+{
+    FILE* fp = NULL;
+
+    if(inPath == NULL || inPath[0] == '\0')
+    {
+        Deb_line("Error: No or empty file path given!")
+        return false;
+    }
+    if(0 < inCharCount && inChars == NULL)
+    {
+        Deb_line("Error: Char. count given, but no characters!")
+        return false;
+    }
+    if(inCharCount < 0)
+    {
+        Deb_line("Error: Negative character count given!")
+    }
+
+    fp = fopen(inPath, "w");
+
+    if(0 < inCharCount)
+    {
+        assert(inChars != NULL); // Checked above.
+        
+        if(fwrite(inChars, sizeof *inChars, (size_t)inCharCount, fp)
+            != (size_t)inCharCount)
+        {
+            Deb_line("Error: Not all characters were written!")
             fclose(fp);
             fp = NULL;
             return false;
