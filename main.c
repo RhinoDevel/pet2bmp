@@ -28,6 +28,13 @@ static unsigned char const bg_red = 0;
 static unsigned char const bg_green = 0;
 static unsigned char const bg_blue = 0;
 
+// Text representation:
+//
+static char const txt_pix_set = 'O';
+static char const txt_pix_unset = '.';
+static char const txt_space = ' ';
+static char const txt_newline = '\n';
+
 static bool is_bmp_compatible(struct Bmp const * const bmp)
 {
     if(bmp == NULL)
@@ -207,7 +214,7 @@ static bool save_rom_as_txt(
     // One character per pixel, space and newline.
     assert(txt_char_count == 0);
     txt_char_count += b->d.w * b->d.h; // Actual pixels of all characters.
-    txt_char_count += b->d.h * (row_rom_char_count - 1); // Horizontal gaps (spaces).
+    txt_char_count += b->d.h * (row_rom_char_count - 1); // Horiz. gaps (space).
     txt_char_count += (col_rom_char_count - 1); // Vertical gaps (newlines).
     txt_char_count += b->d.h - 1; // Newlines behind each "pixel" row (in-bet.).
 
@@ -235,24 +242,24 @@ static bool save_rom_as_txt(
                 || b->p[col_channel_offset + 2] != 0;
 
             assert(txt_pos < txt_char_count);
-            txt[txt_pos++] = is_set ? 'O' : '.';
+            txt[txt_pos++] = is_set ? txt_pix_set : txt_pix_unset;
 
             if((col + 1) != b->d.w && (col + 1) % char_dim.w == 0)
             {
                 assert(txt_pos < txt_char_count);
-                txt[txt_pos++] = ' ';
+                txt[txt_pos++] = txt_space;
             }
         }
         
         if(row + 1 != b->d.h)
         {
             assert(txt_pos < txt_char_count);
-            txt[txt_pos++] = '\n';
+            txt[txt_pos++] = txt_newline;
 
             if((row + 1) % char_dim.h == 0)
             {
                 assert(txt_pos < txt_char_count);
-                txt[txt_pos++] = '\n';
+                txt[txt_pos++] = txt_newline;
             }
         }
     }
