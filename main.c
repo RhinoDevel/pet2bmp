@@ -175,7 +175,96 @@ static bool save_txt_as_rom(
 static bool save_rom_as_txt(
     char const * const rom_file_path, char const * const txt_file_path)
 {
-    return false; // TODO: Implement!
+    // Using bitmap in-the-middle.
+    struct Bmp * const b = create_bmp_from_rom(rom_file_path);
+    int txt_char_count = 0; // Count of characters to write to the text file.
+    int txt_pos = 0;
+
+    if(b == NULL)
+    {
+        return false; // Called method debug-logs on error.
+    }
+
+    // One bitmap row must be exactly wide enough to hold complete characters.
+    assert(b->d.w % char_dim.w == 0);
+    int const row_rom_char_count = b->d.w / char_dim.w;
+    // One bitmap col. must be exactly long enough to hold complete characters.
+    assert(b->d.h % char_dim.h == 0);
+    int const col_rom_char_count = b->d.h / char_dim.h;
+
+    // |.O. OO. OOO|
+    // |O.O O.O O..|
+    // |O.O OOO OOO|
+    // |           |
+    // |OO. OOO OOO|
+    // |O.O OO. OO.|
+    // |OO. OOO O..|
+    // |           |
+    // |OO. O.O .O.|
+    // |O.O OOO .O.|
+    // |OOO O.O .O.|
+
+    // One character per pixel, space and newline.
+    assert(txt_char_count == 0);
+    txt_char_count += b->d.w * b->d.h; // Actual pixels of all characters.
+    txt_char_count += b->d.h * (row_rom_char_count - 1); // Horizontal gaps (spaces).
+    txt_char_count += (col_rom_char_count - 1); // Vertical gaps (newlines).
+    txt_char_count += b->d.h - 1; // Newlines behind each "pixel" row (in-bet.).
+
+    Deb_line("Text character count: %d", txt_char_count)
+
+    char * const txt = malloc((size_t)txt_char_count * sizeof *txt);
+
+    // TODO: Hard-coded, read this from bitmap file!
+    static int const bytes_per_pixel = 3;
+
+    assert(txt_pos == 0);
+    // (using the bitmap's rows and columns, here..)
+    for(int row = 0; row < b->d.h; ++row)
+    {
+        int const row_offset = row * b->d.w;
+
+        for(int col = 0; col < b->d.w; ++col)
+        {
+            int const col_offset = row_offset + col;
+            int const col_channel_offset = bytes_per_pixel * col_offset;
+            // Assuming black to always be the background color!
+            assert(bytes_per_pixel == 3); // TODO: Hard-coded for three bytes per pixel!
+            bool const is_set = b->p[col_channel_offset + 0] != 0
+                || b->p[col_channel_offset + 1] != 0
+                || b->p[col_channel_offset + 2] != 0;
+
+            assert(txt_pos < txt_char_count);
+            txt[txt_pos++] = is_set ? 'O' : '.';
+
+            if((col + 1) != b->d.w && (col + 1) % char_dim.w == 0)
+            {
+                assert(txt_pos < txt_char_count);
+                txt[txt_pos++] = ' ';
+            }
+        }
+        
+        if(row + 1 != b->d.h)
+        {
+            assert(txt_pos < txt_char_count);
+            txt[txt_pos++] = '\n';
+
+            if((row + 1) % char_dim.h == 0)
+            {
+                assert(txt_pos < txt_char_count);
+                txt[txt_pos++] = '\n';
+            }
+        }
+    }
+    assert(txt_pos == txt_char_count);
+
+    Bmp_delete(b);
+    if(!FileSys_saveTxtFile(txt_file_path, txt, txt_char_count))
+    {
+        return false; // Called function debug-logs on error.
+    }
+    free(txt);
+    return true;
 }
 
 static bool save_bmp_as_rom(
@@ -216,6 +305,8 @@ static bool save_bmp_as_rom(
     // One bitmap row must be exactly wide enough to hold complete characters.
     assert(bmp->d.w % char_dim.w == 0);
     int const row_char_count = bmp->d.w / char_dim.w;
+    // One bitmap col. must be exactly long enough to hold complete characters.
+    assert(bmp->d.h % char_dim.h == 0);
     int const col_char_count = bmp->d.h / char_dim.h;
 
     Deb_line("Row char. count: %d", row_char_count)
@@ -250,6 +341,7 @@ static bool save_bmp_as_rom(
                         bytes_per_pixel * bmp_col_offset;
 
                 // Assuming black to always be the background color!
+                assert(bytes_per_pixel == 3); // TODO: Hard-coded for three bytes per pixel!
                 if(bmp->p[bmp_col_channel_offset + 0] != 0
                     || bmp->p[bmp_col_channel_offset + 1] != 0
                     || bmp->p[bmp_col_channel_offset + 2] != 0)
