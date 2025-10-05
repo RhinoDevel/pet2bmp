@@ -1,13 +1,12 @@
 # pet2bmp
-Convert Commodore PETSCII character ROM images into bitmap file(-s) and vice
-versa(!).
+Convert Commodore PETSCII character ROM images into bitmap or text file(-s) and
+vice versa(!).
 
 Extract Commodore PETSCII characters from character ROM image files and make
-them visible as bitmaps.
+them visible as bitmaps or easily modifiable as text files.
 
-You can even modify the extracted bitmaps, turn them back into ROM files and
-this way use your own font/modifications with your Commodore PET (e.g. via
-custom EEPROM)!
+You can change the extracted data, turn it back into a ROM file and this way use
+your own font/modifications with your Commodore PET (e.g. via custom EEPROM)!
 
 **Commandline options:**
 
@@ -15,7 +14,13 @@ custom EEPROM)!
   `pet2bmp b <input ROM file path> <output bitmap file path>`
 
 - Bitmap to character ROM file conversion:
-  `pet2bmp r <input bitmap file path> <output ROM file path>`
+  `pet2bmp c <input bitmap file path> <output ROM file path>`
+
+- Character ROM to text file conversion:
+  `pet2bmp t <input ROM file path> <output text file path>`
+
+- Text to character ROM file conversion:
+  `pet2bmp u <input text file path> <output ROM file path>`
 
 **Example:**
 

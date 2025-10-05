@@ -28,6 +28,18 @@ static unsigned char const bg_red = 0;
 static unsigned char const bg_green = 0;
 static unsigned char const bg_blue = 0;
 
+static bool save_txt_as_rom(
+    char const * const text_file_path, char const * const rom_file_path)
+{
+    return false; // TODO: Implement!
+}
+
+static bool save_rom_as_txt(
+    char const * const rom_file_path, char const * const txt_file_path)
+{
+    return false; // TODO: Implement!
+}
+
 static bool save_bmp_as_rom(
     char const * const bmp_file_path, char const * const rom_file_path)
 {
@@ -238,7 +250,10 @@ static bool save_rom_as_bmp(
 int main(int argc, char* argv[])
 {
     if(argc != (3 + 1)
-        || (argv[1][0] != 'b' && argv[1][0] != 'r')
+        || (argv[1][0] != 'b'
+            && argv[1][0] != 'c'
+            && argv[1][0] != 't'
+            && argv[1][0] != 'u')
         || argv[1][1] != '\0')
     {
         Sys_log_line_bare(
@@ -248,7 +263,13 @@ int main(int argc, char* argv[])
         Sys_log_line_bare(
             "%s b <input ROM file path> <output bitmap file path>", executable);
         Sys_log_line_bare(
-            "%s r <input bitmap file path> <output ROM file path>", executable);
+            "%s c <input bitmap file path> <output ROM file path>", executable);
+        Sys_log_line_bare(
+            "");
+        Sys_log_line_bare(
+            "%s t <input ROM file path> <output text file path>", executable);
+        Sys_log_line_bare(
+            "%s u <input text file path> <output ROM file path>", executable);
         return 1;
     }
 
@@ -264,13 +285,41 @@ int main(int argc, char* argv[])
         }
         return 0;
     }
-
-    // Create ROM file from bitmap file.
-    assert(argv[1][0] == 'r');
-    if(!save_bmp_as_rom(argv[2], argv[3]))
+    if(argv[1][0] == 'c')
     {
-        Sys_log_line_bare("Error: Failed to create ROM file from bitmap file!");
-        return 3;
+        // Create ROM file from bitmap file.
+
+        if(!save_bmp_as_rom(argv[2], argv[3]))
+        {
+            Sys_log_line_bare(
+                "Error: Failed to create ROM file from bitmap file!");
+            return 3;
+        }
+        return 0;
     }
-    return 0;
+
+    if(argv[1][0] == 't')
+    {
+        // Create text file from ROM file.
+
+        if(!save_rom_as_txt(argv[2], argv[3]))
+        {
+            Sys_log_line_bare(
+                "Error: Failed to create text file from ROM file!");
+            return 2;
+        }
+        return 0;
+    }
+    if(argv[1][0] == 'u')
+    {
+        // Create ROM file from text file.
+
+        if(!save_txt_as_rom(argv[2], argv[3]))
+        {
+            Sys_log_line_bare(
+                "Error: Failed to create ROM file from text file!");
+            return 3;
+        }
+        return 0;
+    }
 }
