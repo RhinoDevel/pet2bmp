@@ -67,7 +67,7 @@ static bool is_bmp_compatible(struct Bmp const * const bmp)
 /**
  * - Caller takes ownership of returned object.
  */
-static unsigned char * create_rom_from_bmp(
+static unsigned char * create_rom_from_bmp_file(
     char const * const bmp_file_path, size_t * const out_rom_byte_count)
 {
     if(out_rom_byte_count == NULL)
@@ -176,7 +176,7 @@ static unsigned char * create_rom_from_bmp(
  * - Caller takes ownership of return value, needs to be deallocated via
  *   Bmp_delete().
  */
-static struct Bmp * create_bmp_from_rom(char const * const rom_file_path)
+static struct Bmp * create_bmp_from_rom_file(char const * const rom_file_path)
 {
     off_t size = -1;
 
@@ -291,7 +291,7 @@ static bool save_rom_as_txt(
     char const * const rom_file_path, char const * const txt_file_path)
 {
     // Using bitmap in-the-middle.
-    struct Bmp * const b = create_bmp_from_rom(rom_file_path);
+    struct Bmp * const b = create_bmp_from_rom_file(rom_file_path);
     int txt_char_count = 0; // Count of characters to write to the text file.
     int txt_pos = 0;
 
@@ -386,7 +386,7 @@ static bool save_bmp_as_rom(
     char const * const bmp_file_path, char const * const rom_file_path)
 {
     size_t rom_byte_count = 0;
-    unsigned char * const rom = create_rom_from_bmp(
+    unsigned char * const rom = create_rom_from_bmp_file(
         rom_file_path, &rom_byte_count);
 
     if(rom == NULL)
@@ -407,7 +407,7 @@ static bool save_bmp_as_rom(
 static bool save_rom_as_bmp(
     char const * const rom_file_path, char const * const bmp_file_path)
 {
-    struct Bmp * const b = create_bmp_from_rom(rom_file_path);
+    struct Bmp * const b = create_bmp_from_rom_file(rom_file_path);
 
     if(b == NULL)
     {
