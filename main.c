@@ -28,6 +28,35 @@ static unsigned char const bg_red = 0;
 static unsigned char const bg_green = 0;
 static unsigned char const bg_blue = 0;
 
+static bool is_bmp_compatible(struct Bmp const * const bmp)
+{
+    if(bmp == NULL)
+    {
+        Deb_line("Error: NULL given!")
+        return false;
+    }
+
+    // The bitmap must hold complete characters.
+    if((bmp->d.w * bmp->d.h) % (char_dim.w * char_dim.h) != 0)
+    {
+        Deb_line("Error: Incompatible bitmap & char. dimensions!")
+        return false;
+    }
+
+    // One bitmap row must be exactly wide enough to hold complete characters.
+    if(bmp->d.w % char_dim.w != 0)
+    {
+        Deb_line("Error: Incompatible bitmap & char. widths!")
+        return false;
+    }
+
+    // TODO: Check, that bytes-per-pixel is 3 by reading "from" bitmap!
+
+    // TODO: Add more checks by reading meta data?
+
+    return true;
+}
+
 /**
  * - Caller takes ownership of return value, needs to be deallocated via
  *   Bmp_delete().
@@ -133,6 +162,7 @@ static struct Bmp * create_bmp_from_rom(char const * const rom_file_path)
     // }
 
     free(char_rom);
+    assert(is_bmp_compatible(b));
     return b;
 }
 
@@ -153,7 +183,7 @@ static bool save_bmp_as_rom(
 {
     struct Bmp * const bmp = Bmp_load(bmp_file_path);
 
-    if(bmp == NULL)
+    if(!(is_bmp_compatible(bmp)))
     {
         return false; // (called method debug-logs)
     }
