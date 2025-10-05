@@ -67,23 +67,21 @@ static bool is_bmp_compatible(struct Bmp const * const bmp)
 /**
  * - Caller takes ownership of returned object.
  */
-static unsigned char * create_rom_from_bmp_file(
-    char const * const bmp_file_path, size_t * const out_rom_byte_count)
+static unsigned char * create_rom_from_bmp(
+    struct Bmp const * const bmp, size_t * const out_rom_byte_count)
 {
+    if(!(is_bmp_compatible(bmp)))
+    {
+        return NULL; // (called method debug-logs)
+    }
+
     if(out_rom_byte_count == NULL)
     {
         Deb_line("Error: No byte counter output address given!")
-        return false;
+        return NULL;
     }
 
     *out_rom_byte_count = 0;
-
-    struct Bmp * const bmp = Bmp_load(bmp_file_path);
-
-    if(!(is_bmp_compatible(bmp)))
-    {
-        return false; // (called method debug-logs)
-    }
 
     assert(char_dim.w == 8); // One row of a char must be a byte.
     int const char_byte_count = char_dim.h;
@@ -106,9 +104,8 @@ static unsigned char * create_rom_from_bmp_file(
         Deb_line(
             "Error: Failed to allocate ROM memory (%zu bytes)!",
             rom_byte_count)
-        Bmp_delete(bmp);
         assert(*out_rom_byte_count == 0);
-        return false;
+        return NULL;
     }
 
     // One bitmap row must be exactly wide enough to hold complete characters.
@@ -167,8 +164,20 @@ static unsigned char * create_rom_from_bmp_file(
         }
     }
 
-    Bmp_delete(bmp);
     *out_rom_byte_count = rom_byte_count;
+    return rom;
+}
+
+/**
+ * - Caller takes ownership of returned object.
+ */
+static unsigned char * create_rom_from_bmp_file(
+    char const * const bmp_file_path, size_t * const out_rom_byte_count)
+{
+    struct Bmp * const bmp = Bmp_load(bmp_file_path);
+    unsigned char * const rom = create_rom_from_bmp(bmp, out_rom_byte_count);
+
+    Bmp_delete(bmp);
     return rom;
 }
 
