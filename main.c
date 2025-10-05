@@ -193,7 +193,7 @@ static struct Bmp * create_bmp_from_rom_file(char const * const rom_file_path)
 
     if(char_rom == NULL)
     {
-        return false; // (called function debug-logs on error)
+        return NULL; // (called function debug-logs on error)
     }
 
     assert((off_t)((int)size) == size);
@@ -293,7 +293,13 @@ static struct Bmp * create_bmp_from_rom_file(char const * const rom_file_path)
 static bool save_txt_as_rom(
     char const * const text_file_path, char const * const rom_file_path)
 {
-    return false; // TODO: Implement!
+    // TODO: Implement:
+    //
+    // - Create Bitmap object from text file.
+    // - Use create_rom_from_bmp().
+    // - Use FileSys_saveFile() to save the ROM file.
+    //
+    return false;
 }
 
 static bool save_rom_as_txt(
