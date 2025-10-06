@@ -290,10 +290,79 @@ static struct Bmp * create_bmp_from_rom_file(char const * const rom_file_path)
     return b;
 }
 
+/**
+ * - Caller takes ownership of returned Bmp object.
+ */
 static struct Bmp * create_bmp_from_txt_file(
     char const * const text_file_path)
 {
-    return NULL; // TODO: Implement!   
+    off_t size = -1;
+
+    unsigned char * const txt = FileSys_loadFile(text_file_path, &size);
+    int txt_pos = 0;
+
+    if(txt == NULL)
+    {
+        return NULL; // (called function debug-logs on error)
+    }
+
+    assert((off_t)((int)size) == size);
+
+    // TODO: Add check, if size of loaded text is correct!
+
+    Sys_log_line_bare("Text size = %d bytes.", (int)size);
+
+    struct Bmp * const b = Bmp_create(128, 128);
+
+    Sys_log_line_bare("Bitmap resolution = %d x %d pixels.", b->d.w, b->d.h);
+
+    // TODO: Hard-coded, read this from bitmap file!
+    static int const bytes_per_pixel = 3;
+
+    assert(txt_pos == 0);
+    for(int row = 0; row < b->d.h; ++row)
+    {
+        int const row_offset = row * b->d.w;
+
+        for(int col = 0; col < b->d.w; ++col)
+        {
+            int const col_offset = row_offset + col;
+            int const channel_offset = col_offset * bytes_per_pixel;
+
+            assert(txt_pos < (int)size);
+            char const pix_char = (char)txt[txt_pos++];
+            bool const is_background = pix_char == txt_pix_unset;
+
+            assert(is_background || pix_char == txt_pix_set);
+
+            b->p[channel_offset + 2] =
+                is_background ? bg_red : fg_red;
+            b->p[channel_offset + 1] =
+                is_background ? bg_green : fg_green;
+            b->p[channel_offset + 0] =
+                is_background ? bg_blue : fg_blue;
+
+            if((col + 1) % char_dim.w == 0)
+            {
+                if(row + 1 != b->d.h || col + 1 < b->d.w)
+                {
+                    assert(txt_pos < (int)size);
+                    ++txt_pos; // Gap or newline.
+                }
+            }
+        }
+        
+        if(row + 1 != b->d.h && (row + 1) % char_dim.h == 0)
+        {
+            assert(txt_pos < (int)size);
+            ++txt_pos; // "Gap" newline.
+        }
+    }
+    assert(txt_pos == (int)size);
+
+    free(txt);
+    assert(is_bmp_compatible(b));
+    return b; 
 }
 
 static bool save_txt_as_rom(
@@ -427,7 +496,7 @@ static bool save_bmp_as_rom(
 {
     size_t rom_byte_count = 0;
     unsigned char * const rom = create_rom_from_bmp_file(
-        rom_file_path, &rom_byte_count);
+        bmp_file_path, &rom_byte_count);
 
     if(rom == NULL)
     {
