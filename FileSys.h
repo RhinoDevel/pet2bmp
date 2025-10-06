@@ -25,6 +25,10 @@ bool FileSys_saveFile(
     unsigned char const * const inBytes,
     int const inByteCount);
 
+/**
+ * - Seems to be important for Windows, only [e.g. for Linux, one could use
+ *   FileSys_loadFile(), too].
+ */
 bool FileSys_saveTxtFile(
     char const * const inPath,
     char const * const inChars,
