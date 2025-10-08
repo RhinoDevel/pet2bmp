@@ -22,6 +22,9 @@ your own font/modifications with your Commodore PET (e.g. via custom EEPROM)!
 - Text to character ROM file conversion:
   `pet2bmp u <input text file path> <output ROM file path>`
 
+- (Any kind of) file to text file with hexadecimal byte values (like a C array):
+  `pet2bmp h <input file path> <output hexadecimal text file path>`
+
 **Example:**
 
 Input ROM file:
