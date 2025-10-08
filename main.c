@@ -35,6 +35,18 @@ static char const txt_pix_unset = '.';
 static char const txt_space = ' ';
 static char const txt_newline = '\n';
 
+// Hexadecimal text representation:
+//
+static int const hex_bytes_per_line = 12;
+
+static char get_nibble_as_char(
+    unsigned char const byte, bool const use_high_nibble)
+{
+    unsigned char const nibble = use_high_nibble ? (byte >> 4) : (byte & 0x0F);
+
+    return nibble < 10 ? ('0' + nibble) : ('A' + nibble - 10);  
+}
+
 static bool is_bmp_compatible(struct Bmp const * const bmp)
 {
     if(bmp == NULL)
@@ -396,6 +408,86 @@ static bool save_txt_as_rom(
     return true;
 }
 
+/**
+ * - This is not meant to be used for very large files.
+ */
+static bool save_as_hex(
+    char const * const file_path, char const * const hex_txt_file_path)
+{
+    assert(sizeof(unsigned char) == 1);
+    assert(sizeof(char) == 1);
+
+    off_t file_byte_count = -1;
+
+    unsigned char * const file = FileSys_loadFile(file_path, &file_byte_count);
+    int hex_pos = 0;
+
+    if(file == NULL)
+    {
+        return false; // (called function debug-logs on error)
+    }
+
+    assert((off_t)((int)file_byte_count) == file_byte_count);
+
+    Sys_log_line_bare("Input file size = %d bytes.", (int)file_byte_count);
+
+    // Fixed format:
+    //
+    // 0xAB, 0xCD, 0xEF, 0x1A, 0x1B, 0x1C, 0xAB, 0xCD, 0xEF, 0x1A, 0x1B, 0x1C,
+    // 0xAB, 0xCD, 0xEF, 0x1A, 0x1B, 0x1C, 0xAB, 0xCD, 0xEF, 0x1A, 0x1B, 0x1C,
+    // 0xAB, 0xCD, 0xEF, 0x1A, 0x1B, 0x1C, 0xAB, 0xCD, 0xEF
+    //
+    size_t const hex_byte_count = (2 + 2 + 2) * (size_t)file_byte_count - 2;
+
+    char * const hex = malloc(hex_byte_count * sizeof *hex);
+
+    if(hex == NULL)
+    {
+        Deb_line(
+            "Error: Failed to allocate hex. text memory (%zu bytes)!",
+            hex_byte_count)
+        free(file);
+        return false;
+    }
+
+    assert(hex_pos == 0);
+    for(int file_pos = 0; file_pos < (int)file_byte_count; ++file_pos)
+    {
+        hex[hex_pos++] = '0';
+        hex[hex_pos++] = 'x';
+
+        unsigned char const cur_char = file[file_pos];
+
+        hex[hex_pos++] = get_nibble_as_char(cur_char, true);
+        hex[hex_pos++] = get_nibble_as_char(cur_char, false);
+
+        if(file_pos + 1 != (int)file_byte_count)
+        {
+            hex[hex_pos++] = ',';
+
+            if((file_pos + 1) % hex_bytes_per_line == 0)
+            {
+                hex[hex_pos++] = '\n';
+            }
+            else
+            {
+                hex[hex_pos++] = ' ';
+            }
+        }
+    }
+    assert(hex_pos == hex_byte_count);
+
+    free(file);
+
+    if(!FileSys_saveTxtFile(hex_txt_file_path, hex, hex_byte_count))
+    {
+        free(hex);
+        return false; // Called function debug-logs on error.
+    }
+    free(hex);
+    return true;
+}
+
 static bool save_rom_as_txt(
     char const * const rom_file_path, char const * const txt_file_path)
 {
@@ -438,6 +530,14 @@ static bool save_rom_as_txt(
     Deb_line("Text character count: %d", txt_char_count)
 
     char * const txt = malloc((size_t)txt_char_count * sizeof *txt);
+
+    if(txt == NULL)
+    {
+        Deb_line(
+            "Error: Failed to allocate text memory (%d bytes)!", txt_char_count)
+        Bmp_delete(b);
+        return false;
+    }
 
     // TODO: Hard-coded, read this from bitmap file!
     static int const bytes_per_pixel = 3;
@@ -533,7 +633,8 @@ int main(int argc, char* argv[])
         || (argv[1][0] != 'b'
             && argv[1][0] != 'c'
             && argv[1][0] != 't'
-            && argv[1][0] != 'u')
+            && argv[1][0] != 'u'
+            && argv[1][0] != 'h')
         || argv[1][1] != '\0')
     {
         Sys_log_line_bare(
@@ -550,6 +651,11 @@ int main(int argc, char* argv[])
             "%s t <input ROM file path> <output text file path>", executable);
         Sys_log_line_bare(
             "%s u <input text file path> <output ROM file path>", executable);
+        Sys_log_line_bare(
+            "");
+        Sys_log_line_bare(
+            "%s h <input file path> <output hexadecimal text file path>",
+            executable);
         return 1;
     }
 
@@ -586,7 +692,7 @@ int main(int argc, char* argv[])
         {
             Sys_log_line_bare(
                 "Error: Failed to create text file from ROM file!");
-            return 2;
+            return 4;
         }
         return 0;
     }
@@ -598,8 +704,23 @@ int main(int argc, char* argv[])
         {
             Sys_log_line_bare(
                 "Error: Failed to create ROM file from text file!");
-            return 3;
+            return 5;
         }
         return 0;
     }
+
+    if(argv[1][0] == 'h')
+    {
+        // Create text file with hexadecimal values from some file.
+
+        if(!save_as_hex(argv[2], argv[3]))
+        {
+            Sys_log_line_bare(
+                "Error: Failed to create text file with hexadecimal values!");
+            return 6;
+        }
+        return 0;
+    }
+
+    return 7;
 }
